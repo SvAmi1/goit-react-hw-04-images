@@ -1,4 +1,3 @@
-import { Component } from 'react';
 import { SearchBar } from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { Loader } from './Loader/Loader';
@@ -7,103 +6,104 @@ import { Button } from './Button/Button';
 import { nanoid } from 'nanoid';
 import { fetchImages } from 'services/api';
 import { ToastContainer } from 'react-toastify';
-import { success, error, warn, info, empty } from 'services/toasts';
+import { success, warn, info, empty } from 'services/toasts';
 import { GlobalStyle, Layout, } from './GlobalStyle';
+import { useState, useEffect } from 'react';
 
-export class App extends Component {
-  state = {
-    query: '',
-    images: [],
-    page: 1,
-    totalImg: 0,
-    isLoading: false,
-  };
+export const App = () => {
 
-  async  componentDidUpdate(prevProps, prevState) {
-    const prevQuery = prevState.query;
-    const longQuery = this.state.query;
-    const shotQuery = longQuery.slice(9, longQuery.length);
-    const imgPage = this.state.page;
-    
-    if (prevQuery !== longQuery) {
-      this.setState({ images: [] });
-    }
+  const [query, setQuery] = useState('');
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalImg, setTotalImg] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
-    if (prevQuery !== longQuery || prevState.page !== imgPage) {
-      this.setState({ isLoading: true });
-     
-      setTimeout(async () => {
-        try {
-          const { hits, totalHits } = await fetchImages(shotQuery, imgPage);
-          if (totalHits !== 0 && this.state.totalImg === 0) {
-            success(totalHits);
-          } else if (totalHits === 0) {
-            empty();
-          }
+  // start var
 
-          this.setState(prevState => ({
-            images: [...prevState.images, ...hits],
-            totalImg: totalHits,
-          }));
-
-          if (
-            prevState.images.length + hits.length === totalHits &&
-            this.state.totalImg > 0
-          ) {
-            info();
-          }
-        } catch (err) {
-          console.info(err);
-          error();
-        } finally {
-          this.setState({ isLoading: false });
-        }
-      }, 800);
-    }
-      }
+  // useEffect(() => {
+  //   async function getQuizzes() {
+  //     const shotQuery = query.slice(9, query.length);
   
-  handleSubmit = evt => {
-    evt.preventDefault();
-    // const currentQuery = this.state.query;
-    // const currentQuery = evt.currentTarget.elements.query.value.trim();
-    // console.log(currentQuery);
-    const targetQuery = evt.target.elements.query.value.trim();
-    // console.log(targetQuery);
-    if (targetQuery === '') {
-      warn();
+  //     try {
+  //       setIsLoading(true);
+  //       const quizItems = await fetchImages(shotQuery, page);
+  //       setImages([quizItems]);
+  //     } catch (error) {
+  //       console.log(error);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   }
+  //   getQuizzes();
+  // }, [query, images, page, totalImg, isLoading]);
+
+  useEffect(() => {
+    if (query === '') {
       return;
     }
-    this.onChangeQuery(targetQuery);
-  };
+    const shotQuery = query.slice(9, query.length);
+      setIsLoading(true);
 
-  onChangeQuery = newQuery => {
-    this.setState({
-      query: `${nanoid(8)}/${newQuery}`,
-      images: [],
-      page: 1,
-      totalImg: 0,
-    });
-  };
+      setTimeout(async () => {
+          try {
+          const { hits, totalHits } = await fetchImages(shotQuery, page);
+                  if (totalHits !== 0 && page === 1) {
+                    success(totalHits);
+                  } else if (totalHits === 0) {
+                    empty();
+                  }
+          
+                  setImages(prevState =>
+                    [...prevState, ...hits]);
+          
+                  setTotalImg(totalHits);
+          
+        } catch (error) {
+          console.log(error);
+          error();
+        } finally {
+          setIsLoading(false);
+        }
+      }, 800);
 
-  onChangePage = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
-  };
+    }, [query, page]);
 
+    useEffect(() => {
+      if (images.length === totalImg && totalImg > 0 && page !== 1) {
+        info();
+      }
+    }, [images.length, page, totalImg]);
 
-render () {
-const {images, totalImg, isLoading} = this.state;
+const handleSubmit = evt => {
+  evt.preventDefault();
+    const targetQuery = evt.target.elements.query.value.trim();
+  if (targetQuery === '') {
+    warn();
+    return;
+  }
+  onChangeQuery(targetQuery);
+};
+
+const onChangeQuery = newQuery => {
+  setQuery(`${nanoid(8)}/${newQuery}`);
+  setImages([]);
+  setPage(1);
+  setTotalImg(0);
+};
+
+const onChangePage = () => {
+  setPage(prev => prev + 1);
+};
+
   return (
     <Layout>
-      <SearchBar onSubmit={this.handleSubmit}/>
+      <SearchBar onSubmit={handleSubmit}/>
 
       <ImageGallery images={images}/>
       {isLoading && <Loader/>}
-      {images.length === 0 || images.length === totalImg ? null : (<Button changePage={this.onChangePage}/>)}
+      {images.length === 0 || images.length === totalImg ? (<Button changePage={onChangePage}/>) : null}
       <ToastContainer/>
       <GlobalStyle/>
     </Layout>
   );
-}
 };
