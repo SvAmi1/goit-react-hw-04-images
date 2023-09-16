@@ -73,7 +73,7 @@ export const App = () => {
         info();
       }
     }, [images.length, page, totalImg]);
-
+    
 const handleSubmit = evt => {
   evt.preventDefault();
     const targetQuery = evt.target.elements.query.value.trim();
@@ -101,7 +101,7 @@ const onChangePage = () => {
 
       <ImageGallery images={images}/>
       {isLoading && <Loader/>}
-      {images.length === 0 || images.length === totalImg ? (<Button changePage={onChangePage}/>) : null}
+      {images.length === 0 || images.length === totalImg ? null : (<Button changePage={onChangePage}/>)}
       <ToastContainer/>
       <GlobalStyle/>
     </Layout>
